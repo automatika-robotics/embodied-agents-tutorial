@@ -4,9 +4,9 @@
 
 To get started you will need docker and ollama installed on your system.
 
-### Find docker installation instructions on the [official site](https://docs.docker.com/engine/install/).
+1. Find docker installation instructions on the [official site](https://docs.docker.com/engine/install/).
 
-### Install Ollama on your system with the following:
+2. Install Ollama on your system with the following:
 
 ```shell
 curl -fsSL https://ollama.com/install.sh | sh
@@ -19,13 +19,13 @@ ollama pull llama3.2:3b
 ollama pull qwen2.5vl:7b
 ```
 
-### Pull this repository and cd into it.
+3. Pull this repository and cd into it.
 
 ```shell
 git clone https://github.com/automatika-robotics/embodied-agents-tutorial.git && cd embodied-agents-tutorial
 ```
 
-### Pull the appropriate tutorial container.
+4. Pull the appropriate tutorial container.
 
 - For machines without a GPU, pull the CPU container. Even though the container was made with x86, it should work fine on mac based devices.
 
