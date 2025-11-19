@@ -15,7 +15,7 @@ if [ "${BASH_SOURCE[0]}" != "$0" ]; then
     # Use `source` so it affects the current shell as intended by callers who source this wrapper.
     source /ros_entrypoint.sh "$@"
   else
-    echo "Warning: /ros_entrypoint.sh not found while sourcing custom_entrypoint.sh"
+    echo "Warning: /ros_entrypoint.sh not found while sourcing wrapper_entrypoint.sh"
   fi
   return 0
 fi

@@ -1,17 +1,31 @@
-FROM ros:jazzy-ros-base
+FROM nvidia/cuda:12.1.0-cudnn8-devel-ubuntu22.04
 
 # Set Environment Variables
 ENV ROS_WS=/tmp/ros2_ws
 ENV ROS_VERSION=ros2
-ENV ROS_DISTRO=${ROS_DISTRO}
+ENV ROS_DISTRO=iron
 ENV ROS_ROOT=/opt/ros/${ROS_DISTRO}
 
-# --- STAGE 0: HOT FIX ROS2 apt keyring from base container ---
-# Remove old ROS/ROS2 keys if they exist
-RUN rm -f /usr/share/keyrings/ros2-latest-archive-keyring.gpg \
-    && rm -f /etc/apt/sources.list.d/ros2-latest.list \
-    \
-    && apt-get update && apt-get install -y git curl jq python3-pip systemd\
+# Set environment variables for non-interactive installs and locale
+ENV DEBIAN_FRONTEND=noninteractive
+ENV TZ=Etc/UTC
+ENV LANG=en_US.UTF-8
+ENV LC_ALL=en_US.UTF-8
+
+# --- STAGE 0: Install ROS2 IRON ---
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        locales \
+        git \
+        curl \
+        jq \
+        python3-pip \
+        software-properties-common \
+        tzdata \
+    # Generate locale
+    && locale-gen en_US.UTF-8 \
+    && update-locale LC_ALL=en_US.UTF-8 LANG=en_US.UTF-8 \
+    # Add universe repository
+    && add-apt-repository universe \
     # Get latest ros-apt-source version from GitHub API
     && ROS_APT_SOURCE_VERSION=$(curl -s https://api.github.com/repos/ros-infrastructure/ros-apt-source/releases/latest | jq -r '.tag_name') \
     \
@@ -21,16 +35,16 @@ RUN rm -f /usr/share/keyrings/ros2-latest-archive-keyring.gpg \
     # Download new ros2-apt-source deb
     && curl -L -o /tmp/ros2-apt-source.deb \
     "https://github.com/ros-infrastructure/ros-apt-source/releases/download/${ROS_APT_SOURCE_VERSION}/ros2-apt-source_${ROS_APT_SOURCE_VERSION}.${UBUNTU_CODENAME}_all.deb" \
-    \
     # Install the new keyring + source list
     && dpkg -i /tmp/ros2-apt-source.deb \
     \
+    && apt-get update && apt-get install -y ros-dev-tools ros-${ROS_DISTRO}-ros-base \
     # Cleanup
     && rm -f /tmp/ros2-apt-source.deb \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # --- STAGE 1: Install usb_cam ---
-RUN  apt-get update && apt-get install -y ros-jazzy-usb-cam \
+RUN  apt-get update && apt-get install -y ros-${ROS_DISTRO}-usb-cam \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # --- STAGE 2: Install Ollama --- #
@@ -42,17 +56,36 @@ RUN curl -fsSL https://ollama.com/download/ollama-linux-amd64.tgz \
 RUN mkdir -p /root/.ollama /var/log/ollama \
     && chown -R root:root /root/.ollama /var/log/ollama
 
-# --- STAGE 3: Install ChromaDb in its own virtual environment ---
-RUN python3 -m pip install --no-cache-dir --break-system-packages uv \
-    && uv venv && uv pip install chromadb
+# --- STAGE 3: Install ChromaDb and RoboML in their own virtual environment ---
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+    python3-dev ffmpeg libsm6 libxext6 \
+    && apt-get clean && rm -rf /var/lib/apt/lists/* \
+    # Install uv
+    && python3 -m pip install uv --no-cache-dir \
+    && git clone https://github.com/automatika-robotics/roboml.git \
+    # Create uv environment
+    && uv venv && . .venv/bin/activate && uv pip install -v ./roboml/ \
+    # Test PyTorch
+    && python -c "import torch; print('PyTorch OK:', torch.cuda.is_available())" \
+    # Install OpenMMLab deps
+    && uv pip install --no-cache-dir mmcv==2.1.0 -f https://download.openmmlab.com/mmcv/dist/cu121/torch2.1/index.html \
+    \
+    # Install mmdetection (editable)
+    && git clone https://github.com/open-mmlab/mmdetection.git \
+    && uv pip install --no-build-isolation --no-cache-dir -e ./mmdetection/ \
+    \
+    # Cleanup
+    && rm -rf /roboml \
+    && uv pip install chromadb --no-cache-dir && deactivate
 
 # --- STAGE 4: Get EmbodiedAgents and its mandatory and optional dependencies ---
 WORKDIR ${ROS_WS}/src
-RUN apt update && apt install -y python3-numpy python3-opencv python3-jinja2 python3-msgpack python3-setproctitle python3-platformdirs python3-tqdm python3-toml portaudio19-dev && \
+RUN apt update && apt install -y portaudio19-dev && \
     # Install python based dependencies
-    python3 -m pip install --no-cache-dir --break-system-packages httpx 'attrs>=23.2.0' msgpack-numpy pyyaml && \
+    python3 -m pip install --no-cache-dir numpy opencv-python-headless jinja2 msgpack setproctitle platformdirs tqdm toml httpx 'attrs>=23.2.0' msgpack-numpy pyyaml && \
     # Install optional dependencies for EmbodiedAgents
-    python3 -m pip install --no-cache-dir --break-system-packages ollama redis[hiredis] pyaudio soundfile python-fasthtml monsterui onnxruntime && \
+    python3 -m pip install --no-cache-dir ollama redis[hiredis] pyaudio soundfile python-fasthtml monsterui onnxruntime && \
     rm -rf /root/.cache/pip && \
     set -eux; \
     for repo in \
@@ -68,13 +101,12 @@ RUN apt update && apt install -y python3-numpy python3-opencv python3-jinja2 pyt
 WORKDIR ${ROS_WS}
 RUN /bin/bash -c "source /opt/ros/${ROS_DISTRO}/setup.bash && \
     colcon build --merge-install --install-base ${ROS_ROOT} \
-    --cmake-args -DCMAKE_BUILD_TYPE=Release -DCMAKE_POLICY_DEFAULT_CMP0148=OLD" && \
+    --cmake-args -DCMAKE_BUILD_TYPE=Release" && \
     apt-get clean && rm -rf /var/lib/apt/lists/* && rm -rf ${ROS_WS} /root/.ros /tmp/*
 
 # --- STAGE 6: Get Tutorial and Final Configuration ---
 # Get the tutorial files
 WORKDIR /embodied-agents-tutorial
-RUN git clone https://github.com/automatika-robotics/embodied-agents-tutorial.git .
 
 # Unset ROS_WS
 ENV ROS_WS=
