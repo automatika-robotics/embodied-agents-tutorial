@@ -88,22 +88,6 @@ Now in the terminal where we started the container, run the recipe as follows:
 
 Go to `http://localhost:5001` on your browser to access the UI. We can see the webcam stream and ask the agent questions about what it sees. _Tip: Sometimes, refreshing the UI page helps._
 
-## Recipe 1 - An agent that can see:
-
-This recipe requires the webcam as we want to make our agent see. So from a new terminal we will run the following to access publish images from our webcam:
-
-```shell
-docker exec -it ea_tutorial bash
-source /wrapper_entrypoint.sh
-ros2 run usb_cam usb_cam_node_exe
-```
-
-Now in the terminal where we started the container, run the recipe as follows:
-
-`python3 vlm-1.py`
-
-Go to `http://localhost:5001` on your browser to access the UI. We can see the webcam stream and ask the agent questions about what it sees. _Tip: Sometimes, refreshing the UI page helps._
-
 ## Recipe 2 - An agent that can listen and talk:
 
 > [!CAUTION]
@@ -147,7 +131,7 @@ Now in the terminal where we started the container, we will run the recipe as fo
 
 Go to `http://localhost:5001` on your browser to access the UI.
 
-## Recipe 4 - Map Inputs:
+## Recipe 4 - Giving the agent a memory:
 
 First we will turn on the webcam similar to the previous recipes.
 
@@ -163,7 +147,7 @@ Now in the terminal where we started the container, we will run the recipe as fo
 
 Go to `http://localhost:5001` on your browser to access the UI. This recipe illustrates the MapEncoding (memory) component. So there is no input and output. However we can see the answers appearing in the log, being stored in the Layer taking input from the VLM component.
 
-## Recipe 5 - Tool Calling:
+## Recipe 5 - Making the agent use tools:
 
 First we will turn on the webcam similar to the previous recipes.
 
