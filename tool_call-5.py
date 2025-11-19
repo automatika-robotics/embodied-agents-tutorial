@@ -47,6 +47,7 @@ introspector = VLM(
     component_name="introspector",
 )
 
+
 # Define an arbitrary function to validate the output of the introspective component
 # before publication.
 def introspection_validation(output: str) -> Optional[str]:
@@ -59,7 +60,12 @@ introspector.add_publisher_preprocessor(introspection_answer, introspection_vali
 
 ### Add a semantic memory ###
 # Object detection output from vision component
-layer1 = MapLayer(subscribes_to=detections_topic, temporal_change=True, pre_defined=[(np.array([4.0, 5.0, 0.0]), "Door")])
+layer1 = MapLayer(
+    subscribes_to=detections_topic,
+    temporal_change=True,
+    pre_defined=[(np.array([4.0, 5.0, 0.0]), "Door")],
+)  # we will add a known coordinate for a door in our memory
+
 # Introspection output from vlm component
 layer2 = MapLayer(subscribes_to=introspection_answer, resolution_multiple=3)
 
@@ -157,4 +163,3 @@ launcher.add_pkg(
     multiprocessing=True,
 )
 launcher.bringup()
-
