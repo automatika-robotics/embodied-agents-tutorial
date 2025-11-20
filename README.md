@@ -6,7 +6,7 @@ To get started you will need docker and ollama installed on your system.
 
 1. Find docker installation instructions on the [official site](https://docs.docker.com/engine/install/).
 
-2. Install Ollama on your system with the following:
+2. Install Ollama on your system by running the following in your terminal:
 
 ```shell
 curl -fsSL https://ollama.com/install.sh | sh
@@ -27,7 +27,7 @@ git clone https://github.com/automatika-robotics/embodied-agents-tutorial.git &&
 
 4. Pull the appropriate tutorial container.
 
-- For machines without a GPU, pull the CPU container. Even though the container was made with x86, it should work fine on mac based devices.
+- For machines without a GPU, pull the CPU container. Even though the container was made with x86, it should work fine on ARM devices.
 
 ```shell
 docker run -it --privileged --network host --name=ea_tutorial -v .:/embodied-agents-tutorial ghcr.io/automatika-robotics/embodied-agents-tutorial:cpu_x86
@@ -40,17 +40,17 @@ docker run -it --privileged --network host --gpus all --name=ea_tutorial -v .:/e
 ```
 
 > [!NOTE]
-> The container has ROS2 and EmbodiedAgents installed, along with all the basic dependencies. It also contains Ollama, however we don't need to pull models inside the container, as setting network to `host` would ensure that we use the Ollama server we installed on our system earlier. Naming the container with `--name=ea_tutorial` makes sure we can attach to the same container from multiple terminals easily. We have also mounted our tutorial files with `-v .:/embodied-agents-tutorial`. So that we can change and play with the recipes on our machine.
+> The container has ROS2 and EmbodiedAgents installed, along with all the basic dependencies. It also contains Ollama, however we don't need to pull models inside the container, as setting network to `host` would ensure that we use the Ollama server we installed on our system earlier. Naming the container with `--name=ea_tutorial` makes sure we can attach to the same container from multiple terminals easily. We have also mounted our tutorial files with `-v .:/embodied-agents-tutorial`, so that we can change and play with the recipes on our machine.
 
 You will run recipes from the terminal from which you ran the `docker run` command. Now we can start having fun!
 
 ## Recipe 0 - An agent that can answer questions:
 
-Once in the container run the recipe as follows:
+Once in the container run the first recipe as follows:
 
 `python3 start-0.py`
 
-Now that the recipe is running, we can listen publish to the `llm_query` topic and listen for an anwer on the `answer` topic.
+Now that the recipe is running, we can publish to the `llm_query` topic and listen for an answer on the `answer` topic.
 
 From another terminal do the following to start a listener:
 
@@ -68,13 +68,13 @@ source /wrapper_entrypoint.sh
 ros2 topic pub /llm_query std_msgs/msg/String "{data : 'How are you doing ?'}" --once
 ```
 
-We should be able to see the answer from our agent in the terminal running the listener. However we don't need to use the terminals as we can use the dynamic UI created by the recipe for talking to the agent.
+We should be able to see the answer from our agent in the terminal running the listener. However we don't need to use the terminals as we can use the dynamic UI created by the recipe for talking to the agent. You can stop the recipe by pressing `Ctrl+c` and uncomment line 33 to enable the UI, then run the recipe again.
 
 Go to `http://localhost:5001` on your browser to access the UI. Thats it for the first recipe.
 
 ## Recipe 1 - An agent that can see:
 
-This recipe requires the webcam as we want to make our agent see. So from a new terminal we will run the following to access publish images from our webcam:
+This recipe requires the webcam as we want to make our agent see. So from a new terminal we will run the following to publish images from our webcam:
 
 ```shell
 docker exec -it ea_tutorial bash
@@ -105,7 +105,7 @@ Then in a new terminal we will run roboml server which exists inside the contain
 
 ```shell
 docker exec -it ea_tutorial bash
-cd / && source .venv/bin/activate
+source /.venv/bin/activate
 roboml
 ```
 
@@ -115,9 +115,9 @@ Now in the terminal where we started the container, we will run the recipe as fo
 
 Go to `http://localhost:5001` on your browser to access the UI.
 
-## Recipe 3 - Routing Inputs:
+## Recipe 3 - Making the agent smarter with routing:
 
-First we will turn on the webcam similar to the previous recipes.
+In this recipe we will route the input between two components. First we will turn on the webcam similar to the previous recipes.
 
 ```shell
 docker exec -it ea_tutorial bash
@@ -129,7 +129,7 @@ Now in the terminal where we started the container, we will run the recipe as fo
 
 `python3 routing-3.py`
 
-Go to `http://localhost:5001` on your browser to access the UI.
+Go to `http://localhost:5001` on your browser to access the UI. Ask the agent a general question like **Whats the capital of France** and a contextual question like **What do you see?** and you should receive answers from different components.
 
 ## Recipe 4 - Giving the agent a memory:
 
@@ -145,11 +145,11 @@ Now in the terminal where we started the container, we will run the recipe as fo
 
 `python3 map-4.py`
 
-Go to `http://localhost:5001` on your browser to access the UI. This recipe illustrates the MapEncoding (memory) component. So there is no input and output. However we can see the answers appearing in the log, being stored in the Layer taking input from the VLM component.
+Go to `http://localhost:5001` on your browser to access the UI. This recipe illustrates the MapEncoding (memory) component. So there is no input and output. However we can see the answers appearing in the log. These answers will be stored in the Layer taking input from the VLM component (when we have position and map information being published on the robot).
 
 ## Recipe 5 - Making the agent use tools:
 
-First we will turn on the webcam similar to the previous recipes.
+In this recipe we will illustrate the use of LLM component with RAG and tool calling capabilities to create a component that can process commands of the format **Go to X** . First we will turn on the webcam similar to the previous recipes.
 
 ```shell
 docker exec -it ea_tutorial bash
@@ -161,7 +161,7 @@ Now in the terminal where we started the container, we will run the recipe as fo
 
 `python3 tool_calling-5.py`
 
-We gave a fixed coordinate for the door in our recipe and we expect the LLM component to retreive it from memory and publish it as a `PoseStamped` message. So before sending a `Go to  X` command to the agent we will open another terminal and listen on the `/goal_point` topic. We can do this in a new terminal as follows:
+We gave a fixed coordinate for the door in our recipe and we expect the LLM component to retreive it from memory and publish it as a `PoseStamped` message. So before sending a `Go to X` command to the agent we will open another terminal and listen on the `/goal_point` topic. We can do this in a new terminal as follows:
 
 ```shell
 docker exec -it ea_tutorial bash
@@ -174,7 +174,7 @@ Now we can access the UI at `http://localhost:5001` on our browser and say somet
 ## Recipe 6 - An Arbitrarily Complex Agent:
 
 > [!CAUTION]
-> This recipe only works on the GPU container that has roboml installed. However, you can comment out the SpeechToText and TextToSpeech components to run it with the CPU container.
+> This recipe only works on the GPU container that has roboml installed. However, you can comment out the SpeechToText and TextToSpeech components (which use RoboML) to run it with the CPU container.
 
 First we will turn on the webcam similar to the previous recipe.
 
