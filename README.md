@@ -1,5 +1,9 @@
 # Embodied Agents Tutorial
 
+This tutorial will familiarize you with the basic workings of [EmbodiedAgents](https://github.com/automatika-robotics/embodied-agents), a fully-loaded ROS2 based framework for creating interactive physical agents that can understand, remember, and act upon contextual information from their environment.
+
+Join our 👾[Discord](https://discord.gg/B9ZU6qjzND) for any questions you might have about the tutorial. 
+
 ## Getting Started
 
 To get started you will need docker and ollama installed on your system.
@@ -197,3 +201,11 @@ Now in the terminal where we started the container, we will run the recipe as fo
 `python3 embodied_agent-6.py`
 
 Go to `http://localhost:5001` on your browser to access the UI and talk to the agent.
+
+## Next Steps
+
+- You can learn more by following more elaborate recipe examples provided in the [Docs](https://automatika-robotics.github.io/embodied-agents/).
+  
+- Join the 👾[Discord community](https://discord.gg/B9ZU6qjzND), to get immediate answers to your questions and sharing your creations.
+  
+- Contribute to [EmbodiedAgents](https://github.com/automatika-robotics/embodied-agents) on Github by opening bug reports and feature requests.
