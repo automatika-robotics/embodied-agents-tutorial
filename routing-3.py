@@ -51,7 +51,7 @@ llm = LLM(
 llm.set_topic_prompt(
     llm_query,
     template="""You are an amazing and funny robot.
-    Answer the following question: {{ text0 }}""",
+    Answer the following question: {{ llm_query }}""",
 )
 
 ### Add a router ###
