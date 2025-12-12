@@ -84,7 +84,7 @@ vlm = VLM(
 vlm.set_component_prompt(
     template="""Imagine you are a robot.
     This image has following items: {{ detections }}.
-    Answer the following about this image: {{ text0 }}"""
+    Answer the following about this image: {{ mllm_query }}"""
 )
 
 # Define a fixed input mllm component that does introspection
